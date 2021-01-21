@@ -401,6 +401,7 @@ public class TaskController {
             @NotNull @PathVariable Long taskId,
             @NotNull @RequestBody ExportProjectItemAsEmailParams exportProjectItemAsEmailParams) {
         String username = MDC.get(UserClient.USER_NAME_KEY);
+        taskDaoJpa.exportTaskAsEmail(taskId, exportProjectItemAsEmailParams, username);
     }
 
     @GetMapping(GET_SHARABLES_ROUTE)
