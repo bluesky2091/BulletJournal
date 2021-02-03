@@ -335,5 +335,6 @@ public class NoteController {
             @NotNull @PathVariable Long noteId,
             @NotNull @RequestBody ExportProjectItemAsEmailParams exportProjectItemAsEmailParams) {
         String username = MDC.get(UserClient.USER_NAME_KEY);
+        noteDaoJpa.exportNoteAsEmail(noteId, exportProjectItemAsEmailParams, username);
     }
 }
