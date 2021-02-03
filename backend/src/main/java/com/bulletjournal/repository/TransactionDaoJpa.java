@@ -4,6 +4,7 @@ import com.bulletjournal.authz.AuthorizationService;
 import com.bulletjournal.authz.Operation;
 import com.bulletjournal.contents.ContentType;
 import com.bulletjournal.controller.models.CreateTransactionParams;
+import com.bulletjournal.controller.models.ExportProjectItemAsEmailParams;
 import com.bulletjournal.controller.models.Label;
 import com.bulletjournal.controller.models.ProjectType;
 import com.bulletjournal.controller.models.UpdateTransactionParams;
@@ -48,6 +49,10 @@ public class TransactionDaoJpa extends ProjectItemDaoJpa<TransactionContent> {
     private TransactionContentRepository transactionContentRepository;
     @Autowired
     private SearchIndexDaoJpa searchIndexDaoJpa;
+    @Autowired
+    private UserDaoJpa userDaoJpa;
+    @Autowired
+    private GroupDaoJpa groupDaoJpa;
 
     @Override
     public JpaRepository getJpaRepository() {
@@ -446,5 +451,49 @@ public class TransactionDaoJpa extends ProjectItemDaoJpa<TransactionContent> {
                 ContentType.TRANSACTION, Operation.UPDATE, transactionId, transaction.getProject().getOwner());
         transaction.setColor(color);
         this.transactionRepository.save(transaction);
+    }
+
+    /**
+     * export transaction as email
+     *
+     * @param transactionId transaction ID
+     * @param params exporting item parameter
+     * @param requester the username of action requester
+     */
+    public void exportTransactionAsEmail(Long transactionId,
+                                         ExportProjectItemAsEmailParams params,
+                                         String requester) {
+        Transaction transaction = this.getProjectItem(transactionId, requester);
+        List<String> targetEmails = new ArrayList<>();
+        List<String> usernames = new ArrayList<>();
+        if (StringUtils.isNotBlank(params.getTargetUser())) {
+            usernames.add(params.getTargetUser());
+        }
+
+        if (params.getTargetGroup() != null) {
+            Group group = this.groupDaoJpa.getGroup(params.getTargetGroup());
+            for (UserGroup userGroup : group.getAcceptedUsers()) {
+                usernames.add(userGroup.getUser().getName());
+            }
+        }
+
+        if (params.getEmails() != null) {
+            targetEmails.addAll(params.getEmails());
+        }
+
+        if (!usernames.isEmpty()) {
+            List<User> targetUsers = userDaoJpa.getUsersByNames(new HashSet<>(usernames));
+            for (User user : targetUsers) {
+                String email = user.getEmail();
+                if (email != null) {
+                    targetEmails.add(email);
+                }
+            }
+        }
+        System.out.println("Transaction owner: " + transaction.getOwner());
+        System.out.println("Transaction name: " + transaction.getName());
+
+        System.out.println(targetEmails);
+        System.out.println(params.generateExportHtml());
     }
 }
